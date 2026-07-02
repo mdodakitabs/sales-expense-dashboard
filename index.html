@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Sales &amp; Expense Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+</head>
+<body data-theme="dark">
+
+  <div class="app">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">◆</span>
+        <span class="brand-name">Ledger</span>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item is-active" data-panel="dashboard">
+          <span class="nav-dot"></span> Dashboard
+        </button>
+        <button class="nav-item" data-panel="analytics">
+          <span class="nav-dot"></span> Analytics
+        </button>
+        <button class="nav-item" data-panel="settings">
+          <span class="nav-dot"></span> Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-card">
+        <p class="eyebrow">This month</p>
+        <div class="sidebar-figure" id="sidebarNet">$0.00</div>
+        <p class="sidebar-caption" id="sidebarCaption">net position</p>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="openAddBtn">+ Add Transaction</button>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+
+      <header class="main-header">
+        <div>
+          <h1>Sales &amp; Expense Overview</h1>
+          <p class="subtitle" id="dateLine"></p>
+        </div>
+        <button class="btn btn-primary btn-mobile-add" id="openAddBtnMobile">+ Add</button>
+      </header>
+
+      <!-- ---------- STAT CARDS ---------- -->
+      <section class="stats-row" aria-label="Summary statistics">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-revenue">↑</div>
+          <div>
+            <p class="stat-label">Total Revenue</p>
+            <p class="stat-value" id="statRevenue">$0.00</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-expense">↓</div>
+          <div>
+            <p class="stat-label">Total Expenses</p>
+            <p class="stat-value" id="statExpenses">$0.00</p>
+          </div>
+        </div>
+        <div class="stat-card stat-card-profit" id="profitCard">
+          <div class="stat-icon stat-icon-profit">◆</div>
+          <div>
+            <p class="stat-label">Net Profit</p>
+            <p class="stat-value" id="statProfit">$0.00</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+
+        <!-- ---------- CHART CARD ---------- -->
+        <section class="card chart-card" aria-label="Monthly financial trend">
+          <div class="card-head">
+            <h2>Monthly Trend</h2>
+            <div class="legend">
+              <span><i class="dot dot-revenue"></i> Revenue</span>
+              <span><i class="dot dot-expense"></i> Expenses</span>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="trendChart" role="img" aria-label="Bar chart of monthly revenue and expenses"></canvas>
+          </div>
+        </section>
+
+        <!-- ---------- TABLE CARD ---------- -->
+        <section class="card table-card" aria-label="Recent transactions">
+          <div class="card-head">
+            <h2>Recent Transactions</h2>
+            <span class="task-count" id="rowCount">0 records</span>
+          </div>
+
+          <div class="table-controls">
+            <div class="search-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="searchInput" class="search-input" placeholder="Search transactions…" autocomplete="off">
+            </div>
+            <select id="categoryFilter" class="filter-select">
+              <option value="all">All categories</option>
+            </select>
+          </div>
+
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th class="align-right">Amount</th>
+                  <th class="align-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+            <p class="empty-state" id="emptyState">No transactions match your filters.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ ADD TRANSACTION MODAL ============ -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle">Add Transaction</h2>
+        <button class="modal-close" id="closeModalBtn" aria-label="Close">✕</button>
+      </div>
+
+      <form id="transactionForm" novalidate>
+        <div class="type-toggle">
+          <button type="button" class="type-btn is-active" data-type="income">Income</button>
+          <button type="button" class="type-btn" data-type="expense">Expense</button>
+        </div>
+        <input type="hidden" id="typeInput" value="income">
+
+        <div class="field">
+          <label for="descInput">Description</label>
+          <input type="text" id="descInput" placeholder="e.g. Website design invoice" maxlength="80">
+          <span class="field-error" id="descError"></span>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="categoryInput">Category</label>
+            <input type="text" id="categoryInput" list="categoryOptions" placeholder="e.g. Consulting">
+            <datalist id="categoryOptions"></datalist>
+            <span class="field-error" id="categoryError"></span>
+          </div>
+          <div class="field">
+            <label for="amountInput">Amount ($)</label>
+            <input type="number" id="amountInput" placeholder="0.00" step="0.01" min="0">
+            <span class="field-error" id="amountError"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="dateInput">Date</label>
+          <input type="date" id="dateInput">
+          <span class="field-error" id="dateError"></span>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast for confirmations / errors -->
+  <div class="toast" id="toast"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
